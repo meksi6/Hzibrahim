@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İbrahim Peygamber Hikayesi - İnteraktif İngilizce Okuma</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.7;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 26px;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        .instructions {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .save-instructions {
+            background: #fff3cd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .text-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #34495e;
+            text-align: justify;
+        }
+        
+        .clickable-word {
+            cursor: pointer;
+            padding: 1px 3px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .clickable-word:hover {
+            background-color: #f39c12;
+            color: white;
+            transform: scale(1.02);
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 200px;
+            white-space: normal;
+            text-align: center;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #2c3e50;
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            color: #666;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            margin: 5px;
+        }
+        
+        .word-clicked {
+            background-color: #27ae60 !important;
+            color: white !important;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📖 İbrahim Peygamber Hikayesi - İnteraktif Okuma</h1>
+        
+        <div class="save-instructions">
+            <strong>💾 Nasıl Kaydedilir:</strong>
+            <ol>
+                <li>Bu sayfayı <strong>Ctrl+S</strong> ile kaydedin (dosya adı: <code>abraham_story.html</code>)</li>
+                <li>Kaydedilen dosyayı çift tıklayarak tarayıcıda açın</li>
+                <li>Artık offline olarak kullanabilirsiniz!</li>
+            </ol>
+        </div>
+        
+        <div class="instructions">
+            <strong>📚 Nasıl Kullanılır:</strong> Anlamını öğrenmek istediğiniz kelimenin üzerine tıklayın. Türkçe anlamı tooltip olarak görünecek. Tıkladığınız kelimeler yeşil renkle işaretlenir.
+        </div>
+        
+        <div class="text-content" id="textContent">
+            <!-- Metin buraya JavaScript ile yüklenecek -->
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item" id="clickStats">Tıklanan kelime: 0</div>
+            <div class="stat-item" id="totalWords">Toplam kelime: 0</div>
+            <div class="stat-item" id="percentage">İlerleme: 0%</div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <script>
+        // Kelime çevirileri sözlüğü
+        const translations = {
+            // Zaman ve yer
+            "thousand": "bin",
+            "years": "yıllar",
+            "ago": "önce",
+            "town": "kasaba",
+            "valley": "vadi",
+            "river": "nehir",
+            "lived": "yaşadı",
+            "young": "genç",
+            "man": "adam",
+            "people": "insanlar",
+            "time": "zaman",
+            "passed": "geçti",
+            "place": "yer",
+            "land": "toprak, ülke",
+            
+            // Din ve ibadet
+            "worshipped": "tapındı",
+            "religion": "din",
+            "started": "başladı",
+            "praying": "dua etme",
+            "idols": "putlar",
+            "statues": "heykeller",
+            "wood": "ahşap",
+            "clay": "kil",
+            "precious": "değerli",
+            "stones": "taşlar",
+            "gods": "tanrılar",
+            "worship": "tapınmak",
+            "respect": "saygı",
+            "prayer": "dua",
+            "serve": "hizmet etmek",
+            "devotion": "bağlılık",
+            
+            // Aile ve ilişkiler  
+            "father": "baba",
+            "child": "çocuk",
+            "small": "küçük",
+            "understand": "anlamak",
+            "especially": "özellikle",
+            "hands": "eller",
+            "call": "çağırmak",
+            "refused": "reddetti",
+            "join": "katılmak",
+            "family": "aile",
+            "son": "oğul",
+            "wife": "eş",
+            "married": "evlendi",
+            "mother": "anne",
+            "children": "çocuklar",
+            "descendants": "soyundan gelenler",
+            
+            // Doğa ve gök cisimleri
+            "heavens": "gökler",
+            "world": "dünya",
+            "alone": "yalnız",
+            "searched": "aradı",
+            "clear": "berrak",
+            "night": "gece",
+            "sat": "oturdu",
+            "staring": "bakıyor",
+            "sky": "gökyüzü",
+            "beautiful": "güzel",
+            "shining": "parlayan",
+            "star": "yıldız",
+            "cried": "bağırdı",
+            "looked": "baktı",
+            "awe": "hayranlık",
+            "suddenly": "aniden",
+            "began": "başladı",
+            "fade": "solmak",
+            "disappeared": "kayboldu",
+            "turned": "döndü",
+            "disappointment": "hayal kırıklığı",
+            "love": "sevmek",
+            "things": "şeyler",
+            "set": "batmak",
+            "rising": "yükselen",
+            "moon": "ay",
+            "big": "büyük",
+            "bright": "parlak",
+            "felt": "hissetti",
+            "almost": "neredeyse",
+            "touch": "dokunmak",
+            "thought": "düşündü",
+            "lord": "rab",
+            "long": "uzun",
+            "well": "iyi",
+            "unless": "eğer...mezse",
+            "guide": "rehberlik etmek",
+            "surely": "kesinlikle",
+            "become": "olmak",
+            "folk": "halk",
+            "astray": "yoldan çıkmış",
+            "saw": "gördü",
+            "beauty": "güzellik",
+            "splendor": "ihtişam",
+            "sunrise": "gündoğumu",
+            "decided": "karar verdi",
+            "sun": "güneş",
+            "biggest": "en büyük",
+            "powerful": "güçlü",
+            "universe": "evren",
+            "third": "üçüncü",
+            "wrong": "yanlış",
+            "end": "son",
+            "day": "gün",
+            "realized": "fark etti",
+            "most": "en",
+            "creator": "yaratıcı",
+            "stars": "yıldızlar",
+            "earth": "dünya",
+            "living": "yaşayan",
+            "totally": "tamamen",
+            "peace": "huzur",
+            "because": "çünkü",
+            "knew": "biliyordu",
+            "found": "buldu",
+            "truth": "gerçek",
+            
+            // Konuşma ve iletişim
+            "said": "dedi",
+            "unto": "...e",
+            "what": "ne",
+            "they": "onlar",
+            "ever": "sürekli",
+            "devoted": "bağlı",
+            "them": "onlara",
+            "hear": "duymak",
+            "you": "siz",
+            "when": "ne zaman",
+            "cry": "ağlamak, bağırmak",
+            "benefit": "fayda",
+            "harm": "zarar",
+            "nay": "hayır",
+            "but": "ama",
+            "fathers": "babalar",
+            "acting": "davranmak",
+            "manner": "şekil",
+            "see": "gör",
+            "now": "şimdi",
+            "which": "hangi",
+            "forefathers": "atalar",
+            "enemy": "düşman",
+            "except": "dışında",
+            "worlds": "alemler",
+            "who": "kim",
+            "created": "yarattı",
+            "me": "beni",
+            "he": "o",
+            "guides": "rehberlik eder",
+            "feeds": "besler",
+            "waters": "sular",
+            "sicken": "hasta olmak",
+            "then": "sonra",
+            "heals": "iyileştirir",
+            "causes": "sebep olmak",
+            "die": "ölmek",
+            "gives": "verir",
+            "life": "hayat",
+            "again": "tekrar",
+            "ardently": "içtenlikle",
+            "hope": "umut",
+            "will": "edecek",
+            "forgive": "affet",
+            "my": "benim",
+            "sin": "günah",
+            "judgement": "yargı",
+            
+            // Eylemler
+            "while": "iken",
+            "all": "hepsi",
+            "townspeople": "kasaba halkı",
+            "were": "idiler",
+            "out": "dışarıda",
+            "angrily": "öfkeyle",
+            "smashed": "parçaladı",
+            "right": "sağ",
+            "hand": "el",
+            "very": "çok",
+            "large": "büyük",
+            "returned": "döndü",
+            "furious": "öfkeli",
+            "remembered": "hatırladı",
+            "about": "hakkında",
+            "had": "vardı",
+            "him": "onu",
+            "brought": "getirdi",
+            "forth": "ileri",
+            "before": "önce",
+            "everyone": "herkes",
+            "demanded": "talep etti",
+            "is": "mi",
+            "it": "o",
+            "did": "yaptı",
+            "this": "bu",
+            "our": "bizim",
+            "replied": "cevap verdi",
+            "their": "onların",
+            "chief": "şef",
+            "ask": "sor",
+            "if": "eğer",
+            "they": "onlar",
+            "are": "iseler",
+            "able": "muktedir",
+            "speak": "konuşmak",
+            "exclaimed": "haykırdı",
+            "know": "bilmek",
+            "do": "yapmak",
+            "not": "değil",
+            "yourselves": "kendiniz",
+            "have": "sahip olmak",
+            "carved": "oydu",
+            "make": "yapmak",
+            "continued": "devam etti",
+            "instead": "yerine",
+            "of": "nin",
+            "cannot": "yapamaz",
+            "profit": "fayda",
+            "at": "de",
+            "nor": "ne de",
+            "finally": "sonunda",
+            "warned": "uyardı",
+            "keep": "tut",
+            "your": "sizin",
+            "duty": "görev",
+            "that": "o",
+            "better": "daha iyi",
+            "for": "için",
+            "only": "sadece",
+            "invent": "uydurmak",
+            "lie": "yalan",
+            "lo": "işte",
+            "those": "şunlar",
+            "whom": "kimi",
+            "own": "sahip olmak",
+            "no": "hiç",
+            "provision": "rızık",
+            "so": "o yüzden",
+            "seek": "aramak",
+            "from": "den",
+            "and": "ve",
+            "give": "vermek",
+            "thanks": "şükür",
+            "brought": "getirildi",
+            "back": "geri",
+            
+            // Ceza ve mucize
+            "decided": "karar verdi",
+            "worst": "en kötü",
+            "punishment": "ceza",
+            "could": "yapabilir",
+            "find": "bul",
+            "burnt": "yakılmak",
+            "death": "ölüm",
+            "chosen": "seçilen",
+            "gathered": "toplandı",
+            "centre": "merkez",
+            "city": "şehir",
+            "even": "hatta",
+            "king": "kral",
+            "there": "orada",
+            "placed": "yerleştirildi",
+            "inside": "içinde",
+            "special": "özel",
+            "building": "bina",
+            "filled": "dolu",
+            "lit": "yakıldı",
+            "soon": "yakında",
+            "fire": "ateş",
+            "became": "oldu",
+            "strong": "güçlü",
+            "pushed": "itildi",
+            "flames": "alevler",
+            "coolness": "serinlik",
+            "waited": "bekledi",
+            "until": "kadar",
+            "completely": "tamamen",
+            "died": "söndü",
+            "down": "aşağı",
+            "still": "hala",
+            "sitting": "oturuyor",
+            "though": "sanki",
+            "nothing": "hiçbir şey",
+            "happened": "oldu",
+            "moment": "an",
+            "utterly": "tamamen",
+            "confused": "kafası karışık",
+            "however": "ancak",
+            "moved": "etkilendi",
+            "miracle": "mucize",
+            "just": "sadece",
+            "eyes": "gözler",
+            "tried": "denedi",
+            "persuade": "ikna etmek",
+            "own": "kendi",
+            "dear": "sevgili",
+            "named": "adlı",
+            "powerless": "güçsüz",
+            "seeing": "gören",
+            "hearing": "işiten",
+            "explained": "açıkladı",
+            "knowledge": "bilgi",
+            "come": "gelmek",
+            "implored": "yalvardı",
+            "follow": "takip et",
+            "lead": "yönet",
+            "path": "yol",
+            "don't": "etme",
+            "devil": "şeytan",
+            "would": "idi",
+            "listen": "dinle",
+            "threatened": "tehdit etti",
+            "stoning": "taşlama",
+            "continued": "devam etti",
+            "reject": "reddet",
+            "ordered": "emretti",
+            "leave": "ayrıl",
+            "these": "bu",
+            "words": "sözler",
+            "depart": "ayrıl",
+            "me": "benden",
+            "while": "süre",
+            "shall": "edeceğim",
+            "lord's": "rabbin",
+            "forgiveness": "af",
+            "surely": "kesinlikle",
+            "was": "idi",
+            "gracious": "lütufkar",
+            
+            // Yolculuk ve yerleşim
+            "imagine": "hayal et",
+            "how": "nasıl",
+            "terrible": "korkunç",
+            "must": "olmalı",
+            "been": "olmuş",
+            "home": "ev",
+            "set": "yola çıkmak",
+            "across": "karşısına",
+            "wilderness": "çöl",
+            "into": "içine",
+            "unknown": "bilinmeyen",
+            "same": "aynı",
+            "remained": "kalmış",
+            "among": "arasında",
+            "believe": "inanmak",
+            "always": "her zaman",
+            "sense": "his",
+            "cared": "ilgilendi",
+            "near": "yakın",
+            "traveled": "seyahat etti",
+            "last": "sonunda",
+            "after": "sonra",
+            "hard": "zor",
+            "journey": "yolculuk",
+            "arrived": "vardı",
+            "by": "yanında",
+            "sea": "deniz",
+            "far": "uzak",
+            "noble": "asil",
+            "woman": "kadın",
+            "name": "isim",
+            "settled": "yerleşti",
+            "many": "birçok",
+            "passed": "geçti",
+            "blessed": "kutsandı",
+            "any": "herhangi",
+            "hope": "umut",
+            "keeping": "tutarak",
+            "with": "ile",
+            "tradition": "gelenek",
+            "suggested": "önerdi",
+            "should": "meli",
+            "marry": "evlenmek",
+            "handmaid": "hizmetçi",
+            "took": "aldı",
+            "little": "küçük",
+            "boy": "oğlan",
+            "later": "sonra",
+            "promised": "söz verdi",
+            "another": "başka",
+            "first": "ilk",
+            "second": "ikinci",
+            "called": "denilen",
+            "also": "ayrıca",
+            "told": "söyledi",
+            "two": "iki",
+            "sons": "oğullar",
+            "nations": "milletler",
+            "three": "üç",
+            "religions": "dinler",
+            "founded": "kuruldu",
+            "take": "almak",
+            "away": "uzakta",
+            "new": "yeni",
+            "events": "olaylar",
+            "important": "önemli",
+            "part": "parça",
+            "plan": "plan",
+            "form": "oluşturmak",
+            "nation": "millet",
+            "which": "hangi",
+            "great": "büyük",
+            "prophet": "peygamber",
+            "messenger": "elçi",
+            "left": "ayrıldı",
+            "days": "günler",
+            "finally": "sonunda",
+            "reached": "ulaştı",
+            "arid": "kurak",
+            "caravan": "kervan",
+            "routes": "yollar",
+            "water": "su",
+            "although": "rağmen",
+            "small": "küçük",
+            "supply": "kaynak",
+            "knowing": "bilerek",
+            "care": "ilgilenmek",
+            "gone": "gitti",
+            "grow": "büyümek",
+            "weak": "zayıf",
+            "thirst": "susuzluk",
+            "hills": "tepeler",
+            "nearby": "yakınlarda",
+            "one": "bir",
+            "other": "diğer",
+            "went": "gitti",
+            "up": "yukarı",
+            "hill": "tepe",
+            "distance": "mesafe",
+            "see": "görmek",
+            "none": "hiç",
+            "same": "aynı",
+            "seven": "yedi",
+            "times": "defa",
+            "sadly": "üzülerek",
+            "surprise": "şaşkınlık",
+            "joy": "sevinç",
+            "spring": "kaynak",
+            "bubbling": "kaynayan",
+            "near": "yakın",
+            "area": "alan",
+            "around": "etrafında",
+            "rest": "dinlenme",
+            "caravans": "kervanlar",
+            "travelling": "seyahat eden",
+            "desert": "çöl",
+            "grew": "büyüdü",
+            "famous": "ünlü",
+            "trading": "ticaret",
+            "visit": "ziyaret",
+            "into": "içine",
+            "during": "sırasında",
+            "these": "bu",
+            "visits": "ziyaretler",
+            "commanded": "emretti",
+            "rebuild": "yeniden inşa etmek",
+            "very": "tam",
+            "where": "nerede",
+            "exactly": "tam olarak",
+            "build": "inşa etmek",
+            "erected": "dikildi",
+            "built": "inşa edildi",
+            "shape": "şekil",
+            "cube": "küp",
+            "eastern": "doğu",
+            "corner": "köşe",
+            "black": "siyah",
+            "stone": "taş",
+            "fallen": "düşmüş",
+            "heaven": "cennet",
+            "angel": "melek",
+            "hill": "tepe",
+            "worked": "çalıştı",
+            "prayed": "dua etti",
+            "send": "göndermek",
+            "raising": "yükseltmek",
+            "foundations": "temeller",
+            "house": "ev",
+            "receive": "al",
+            "from": "den",
+            "us": "biz",
+            "thou": "sen",
+            "only": "sadece",
+            "art": "sun",
+            "hearing": "işiten",
+            "knowing": "bilen",
+            "make": "yap",
+            "submissive": "boyun eğen",
+            "thee": "sana",
+            "seed": "tohum",
+            "show": "göster",
+            "ways": "yollar",
+            "turn": "dön",
+            "toward": "doğru",
+            "relenting": "tövbe kabul eden",
+            "merciful": "merhametli",
+            "raise": "yükselt",
+            "midst": "arası",
+            "among": "arasından",
+            "recite": "okumak",
+            "revelations": "vahiyler",
+            "instruct": "öğretmek",
+            "scripture": "kitap",
+            "wisdom": "hikmet",
+            "grow": "büyütmek",
+            "mighty": "güçlü",
+            "wise": "hikmetli",
+            "completed": "tamamlandı",
+            "call": "çağırmak",
+            "mankind": "insanlık",
+            "pilgrimage": "hac",
+            "holy": "kutsal",
+            "wondered": "merak etti",
+            "anyone": "herhangi biri",
+            "hear": "duymak",
+            "bring": "getirmek",
+            "established": "kuruldu",
+            "muslims": "müslümanlar",
+            "today": "bugün",
+            "continue": "devam etmek",
+            "answer": "cevap vermek",
+            "age-old": "eski"
+        };
+
+        // Metni hazırla
+        function prepareText() {
+            const originalText = `<h2>How It All Began</h2>
+            
+Nearly four <span class="clickable-word" data-translation="thousand">thousand</span> <span class="clickable-word" data-translation="years">years</span> <span class="clickable-word" data-translation="ago">ago</span>, in the Sumerian <span class="clickable-word" data-translation="town">town</span> of Ur in the <span class="clickable-word" data-translation="valley">valley</span> of the <span class="clickable-word" data-translation="river">river</span> Euphrates, <span class="clickable-word" data-translation="lived">lived</span> a <span class="clickable-word" data-translation="young">young</span> <span class="clickable-word" data-translation="man">man</span> <span class="clickable-word" data-translation="named">named</span> Abraham. The <span class="clickable-word" data-translation="people">people</span> of Ur had once <span class="clickable-word" data-translation="worshipped">worshipped</span> Allah but as <span class="clickable-word" data-translation="time">time</span> <span class="clickable-word" data-translation="passed">passed</span> they forgot the true <span class="clickable-word" data-translation="religion">religion</span> and <span class="clickable-word" data-translation="started">started</span> <span class="clickable-word" data-translation="praying">praying</span> to <span class="clickable-word" data-translation="idols">idols</span>, <span class="clickable-word" data-translation="statues">statues</span> made of <span class="clickable-word" data-translation="wood">wood</span> or <span class="clickable-word" data-translation="clay">clay</span> and sometimes <span class="clickable-word" data-translation="even">even</span> of <span class="clickable-word" data-translation="precious">precious</span> <span class="clickable-word" data-translation="stones">stones</span>.
+
+<br><br>Even as a <span class="clickable-word" data-translation="small">small</span> <span class="clickable-word" data-translation="child">child</span> Abraham could not <span class="clickable-word" data-translation="understand">understand</span> how his <span class="clickable-word" data-translation="people">people</span>, and <span class="clickable-word" data-translation="especially">especially</span> his <span class="clickable-word" data-translation="father">father</span>, could make these images with their own <span class="clickable-word" data-translation="hands">hands</span>, <span class="clickable-word" data-translation="call">call</span> them <span class="clickable-word" data-translation="gods">gods</span>, and then <span class="clickable-word" data-translation="worship">worship</span> them. He had <span class="clickable-word" data-translation="always">always</span> <span class="clickable-word" data-translation="refused">refused</span> to <span class="clickable-word" data-translation="join">join</span> his <span class="clickable-word" data-translation="people">people</span> when they paid <span class="clickable-word" data-translation="respect">respect</span> to these <span class="clickable-word" data-translation="statues">statues</span>. Instead he would <span class="clickable-word" data-translation="leave">leave</span> the <span class="clickable-word" data-translation="town">town</span> and sit <span class="clickable-word" data-translation="alone">alone</span>, thinking about the <span class="clickable-word" data-translation="heavens">heavens</span> and the <span class="clickable-word" data-translation="world">world</span> about him. He was sure his <span class="clickable-word" data-translation="people">people</span> were doing <span class="clickable-word" data-translation="wrong">wrong</span> and so <span class="clickable-word" data-translation="alone">alone</span> he <span class="clickable-word" data-translation="searched">searched</span> for the <span class="clickable-word" data-translation="right">right</span> way.
+
+<br><br>One <span class="clickable-word" data-translation="clear">clear</span> <span class="clickable-word" data-translation="night">night</span> as he <span class="clickable-word" data-translation="sat">sat</span> <span class="clickable-word" data-translation="staring">staring</span> at the <span class="clickable-word" data-translation="sky">sky</span> he <span class="clickable-word" data-translation="saw">saw</span> a <span class="clickable-word" data-translation="beautiful">beautiful</span> <span class="clickable-word" data-translation="shining">shining</span> <span class="clickable-word" data-translation="star">star</span>, so <span class="clickable-word" data-translation="beautiful">beautiful</span> that he <span class="clickable-word" data-translation="cried">cried</span> out: 'This must be Allah!' He <span class="clickable-word" data-translation="looked">looked</span> at it in <span class="clickable-word" data-translation="awe">awe</span> for some <span class="clickable-word" data-translation="time">time</span>, <span class="clickable-word" data-translation="until">until</span> <span class="clickable-word" data-translation="suddenly">suddenly</span> it <span class="clickable-word" data-translation="began">began</span> to <span class="clickable-word" data-translation="fade">fade</span> and then it <span class="clickable-word" data-translation="disappeared">disappeared</span>. He <span class="clickable-word" data-translation="turned">turned</span> <span class="clickable-word" data-translation="away">away</span> in <span class="clickable-word" data-translation="disappointment">disappointment</span> saying: I <span class="clickable-word" data-translation="love">love</span> not <span class="clickable-word" data-translation="things">things</span> that <span class="clickable-word" data-translation="set">set</span>.
+
+<br><br>On <span class="clickable-word" data-translation="another">another</span> <span class="clickable-word" data-translation="night">night</span> Abraham was <span class="clickable-word" data-translation="again">again</span> <span class="clickable-word" data-translation="looking">looking</span> at the <span class="clickable-word" data-translation="sky">sky</span> and he <span class="clickable-word" data-translation="saw">saw</span> the <span class="clickable-word" data-translation="rising">rising</span> <span class="clickable-word" data-translation="moon">moon</span>, so <span class="clickable-word" data-translation="big">big</span> and <span class="clickable-word" data-translation="bright">bright</span> that he <span class="clickable-word" data-translation="felt">felt</span> he could <span class="clickable-word" data-translation="almost">almost</span> <span class="clickable-word" data-translation="touch">touch</span> it. He <span class="clickable-word" data-translation="thought">thought</span> to himself: This is my <span class="clickable-word" data-translation="lord">Lord</span>. But it was not <span class="clickable-word" data-translation="long">long</span> <span class="clickable-word" data-translation="before">before</span> the <span class="clickable-word" data-translation="moon">moon</span> <span class="clickable-word" data-translation="set">set</span> as <span class="clickable-word" data-translation="well">well</span>. Then he <span class="clickable-word" data-translation="said">said</span>, <span class="clickable-word" data-translation="unless">Unless</span> my <span class="clickable-word" data-translation="lord">Lord</span> <span class="clickable-word" data-translation="guide">guide</span> me, I <span class="clickable-word" data-translation="surely">surely</span> shall <span class="clickable-word" data-translation="become">become</span> one of the <span class="clickable-word" data-translation="folk">folk</span> who are <span class="clickable-word" data-translation="astray">astray</span>.
+
+<br><br>Abraham then <span class="clickable-word" data-translation="saw">saw</span> the <span class="clickable-word" data-translation="beauty">beauty</span> and <span class="clickable-word" data-translation="splendor">splendor</span> of the <span class="clickable-word" data-translation="sunrise">sunrise</span> and <span class="clickable-word" data-translation="decided">decided</span> that the <span class="clickable-word" data-translation="sun">sun</span> must be the <span class="clickable-word" data-translation="biggest">biggest</span> and <span class="clickable-word" data-translation="most">most</span> <span class="clickable-word" data-translation="powerful">powerful</span> thing in the <span class="clickable-word" data-translation="universe">universe</span>. But for the <span class="clickable-word" data-translation="third">third</span> <span class="clickable-word" data-translation="time">time</span> he was <span class="clickable-word" data-translation="wrong">wrong</span>, for the <span class="clickable-word" data-translation="sun">sun</span> <span class="clickable-word" data-translation="set">set</span> at the <span class="clickable-word" data-translation="end">end</span> of the <span class="clickable-word" data-translation="day">day</span>. It was then that he <span class="clickable-word" data-translation="realized">realized</span> that Allah is the <span class="clickable-word" data-translation="most">Most</span> <span class="clickable-word" data-translation="powerful">Powerful</span>, the <span class="clickable-word" data-translation="creator">Creator</span> of the <span class="clickable-word" data-translation="stars">stars</span>, the <span class="clickable-word" data-translation="moon">moon</span>, the <span class="clickable-word" data-translation="sun">sun</span>, the <span class="clickable-word" data-translation="earth">earth</span> and of all <span class="clickable-word" data-translation="living">living</span> <span class="clickable-word" data-translation="things">things</span>. <span class="clickable-word" data-translation="suddenly">Suddenly</span> he <span class="clickable-word" data-translation="felt">felt</span> himself <span class="clickable-word" data-translation="totally">totally</span> at <span class="clickable-word" data-translation="peace">peace</span>, <span class="clickable-word" data-translation="because">because</span> he <span class="clickable-word" data-translation="knew">knew</span> that he had <span class="clickable-word" data-translation="found">found</span> the <span class="clickable-word" data-translation="truth">Truth</span>.
+
+<h2>Abraham Confronts His People</h2>
+
+When he <span class="clickable-word" data-translation="said">said</span> <span class="clickable-word" data-translation="unto">unto</span> his <span class="clickable-word" data-translation="father">father</span> and his <span class="clickable-word" data-translation="folk">folk</span>: What do you <span class="clickable-word" data-translation="worship">worship</span>? They <span class="clickable-word" data-translation="said">said</span>: We <span class="clickable-word" data-translation="worship">worship</span> <span class="clickable-word" data-translation="idols">idols</span>, and are <span class="clickable-word" data-translation="ever">ever</span> <span class="clickable-word" data-translation="devoted">devoted</span> to them. He <span class="clickable-word" data-translation="said">said</span>: Do they <span class="clickable-word" data-translation="hear">hear</span> you when you <span class="clickable-word" data-translation="cry">cry</span>? Or do they <span class="clickable-word" data-translation="benefit">benefit</span> or <span class="clickable-word" data-translation="harm">harm</span> you? They <span class="clickable-word" data-translation="said">said</span>: <span class="clickable-word" data-translation="nay">Nay</span>, but we <span class="clickable-word" data-translation="found">found</span> our <span class="clickable-word" data-translation="fathers">fathers</span> <span class="clickable-word" data-translation="acting">acting</span> in this <span class="clickable-word" data-translation="manner">manner</span>.
+
+<br><br><span class="clickable-word" data-translation="finally">Finally</span>, Abraham <span class="clickable-word" data-translation="warned">warned</span> them, <span class="clickable-word" data-translation="serve">Serve</span> Allah, and <span class="clickable-word" data-translation="keep">keep</span> your <span class="clickable-word" data-translation="duty">duty</span> <span class="clickable-word" data-translation="unto">unto</span> Him; that is <span class="clickable-word" data-translation="better">better</span> for you if you did but <span class="clickable-word" data-translation="know">know</span>. You <span class="clickable-word" data-translation="serve">serve</span> <span class="clickable-word" data-translation="instead">instead</span> of Allah <span class="clickable-word" data-translation="only">only</span> <span class="clickable-word" data-translation="idols">idols</span>, and you <span class="clickable-word" data-translation="only">only</span> <span class="clickable-word" data-translation="invent">invent</span> a <span class="clickable-word" data-translation="lie">lie</span>. <span class="clickable-word" data-translation="lo">Lo!</span> <span class="clickable-word" data-translation="those">those</span> <span class="clickable-word" data-translation="whom">whom</span> you <span class="clickable-word" data-translation="serve">serve</span> <span class="clickable-word" data-translation="instead">instead</span> of Allah <span class="clickable-word" data-translation="own">own</span> no <span class="clickable-word" data-translation="provision">provision</span> for you. So <span class="clickable-word" data-translation="seek">seek</span> your <span class="clickable-word" data-translation="provision">provision</span> from Allah, and <span class="clickable-word" data-translation="serve">serve</span> Him, and <span class="clickable-word" data-translation="give">give</span> <span class="clickable-word" data-translation="thanks">thanks</span> <span class="clickable-word" data-translation="unto">unto</span> Him, for <span class="clickable-word" data-translation="unto">unto</span> Him you will be <span class="clickable-word" data-translation="brought">brought</span> <span class="clickable-word" data-translation="back">back</span>.
+
+<h2>The Miracle of Fire</h2>
+
+One <span class="clickable-word" data-translation="day">day</span>, <span class="clickable-word" data-translation="while">while</span> all the <span class="clickable-word" data-translation="townspeople">townspeople</span> <span class="clickable-word" data-translation="were">were</span> out, Abraham <span class="clickable-word" data-translation="angrily">angrily</span> <span class="clickable-word" data-translation="smashed">smashed</span> all the <span class="clickable-word" data-translation="idols">idols</span> with his <span class="clickable-word" data-translation="right">right</span> <span class="clickable-word" data-translation="hand">hand</span> <span class="clickable-word" data-translation="except">except</span> for one which was <span class="clickable-word" data-translation="very">very</span> <span class="clickable-word" data-translation="large">large</span>. When the <span class="clickable-word" data-translation="people">people</span> <span class="clickable-word" data-translation="returned">returned</span> they <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="furious">furious</span>. They <span class="clickable-word" data-translation="remembered">remembered</span> the <span class="clickable-word" data-translation="things">things</span> Abraham had <span class="clickable-word" data-translation="said">said</span> <span class="clickable-word" data-translation="about">about</span> the <span class="clickable-word" data-translation="idols">idols</span>. They had him <span class="clickable-word" data-translation="brought">brought</span> <span class="clickable-word" data-translation="forth">forth</span> <span class="clickable-word" data-translation="before">before</span> <span class="clickable-word" data-translation="everyone">everyone</span> and <span class="clickable-word" data-translation="demanded">demanded</span>, 'Is it you who <span class="clickable-word" data-translation="did">did</span> this to our <span class="clickable-word" data-translation="gods">gods</span>, O Abraham?' Abraham <span class="clickable-word" data-translation="replied">replied</span>, But this their <span class="clickable-word" data-translation="chief">chief</span> <span class="clickable-word" data-translation="did">did</span> it. <span class="clickable-word" data-translation="ask">Ask</span> them, if they are <span class="clickable-word" data-translation="able">able</span> to <span class="clickable-word" data-translation="speak">speak</span>.'
+
+<br><br>The <span class="clickable-word" data-translation="people">people</span> had <span class="clickable-word" data-translation="decided">decided</span> to <span class="clickable-word" data-translation="give">give</span> Abraham the <span class="clickable-word" data-translation="worst">worst</span> <span class="clickable-word" data-translation="punishment">punishment</span> they could <span class="clickable-word" data-translation="find">find</span>: he was to be <span class="clickable-word" data-translation="burnt">burnt</span> to <span class="clickable-word" data-translation="death">death</span>. On the <span class="clickable-word" data-translation="chosen">chosen</span> <span class="clickable-word" data-translation="day">day</span> all the <span class="clickable-word" data-translation="people">people</span> <span class="clickable-word" data-translation="gathered">gathered</span> in the <span class="clickable-word" data-translation="centre">centre</span> of the <span class="clickable-word" data-translation="city">city</span> and <span class="clickable-word" data-translation="even">even</span> the <span class="clickable-word" data-translation="king">King</span> of Ur was <span class="clickable-word" data-translation="there">there</span>. Abraham was then <span class="clickable-word" data-translation="placed">placed</span> <span class="clickable-word" data-translation="inside">inside</span> a <span class="clickable-word" data-translation="special">special</span> <span class="clickable-word" data-translation="building">building</span> <span class="clickable-word" data-translation="filled">filled</span> with <span class="clickable-word" data-translation="wood">wood</span>. The <span class="clickable-word" data-translation="wood">wood</span> was <span class="clickable-word" data-translation="lit">lit</span>. <span class="clickable-word" data-translation="soon">Soon</span> the <span class="clickable-word" data-translation="fire">fire</span> <span class="clickable-word" data-translation="became">became</span> so <span class="clickable-word" data-translation="strong">strong</span> that the <span class="clickable-word" data-translation="people">people</span> <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="pushed">pushed</span> <span class="clickable-word" data-translation="back">back</span> by the <span class="clickable-word" data-translation="flames">flames</span>. But Allah <span class="clickable-word" data-translation="said">said</span>: "O <span class="clickable-word" data-translation="fire">fire</span>, be <span class="clickable-word" data-translation="coolness">coolness</span> and <span class="clickable-word" data-translation="peace">peace</span> for Abraham".
+
+<br><br>The <span class="clickable-word" data-translation="people">people</span> <span class="clickable-word" data-translation="waited">waited</span> <span class="clickable-word" data-translation="until">until</span> the <span class="clickable-word" data-translation="fire">fire</span> had <span class="clickable-word" data-translation="completely">completely</span> <span class="clickable-word" data-translation="died">died</span> <span class="clickable-word" data-translation="down">down</span>, and it was then that they <span class="clickable-word" data-translation="saw">saw</span> Abraham <span class="clickable-word" data-translation="still">still</span> <span class="clickable-word" data-translation="sitting">sitting</span> <span class="clickable-word" data-translation="there">there</span> as <span class="clickable-word" data-translation="though">though</span> <span class="clickable-word" data-translation="nothing">nothing</span> had <span class="clickable-word" data-translation="happened">happened</span>! At that <span class="clickable-word" data-translation="moment">moment</span> they <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="utterly">utterly</span> <span class="clickable-word" data-translation="confused">confused</span>. They <span class="clickable-word" data-translation="were">were</span> not, <span class="clickable-word" data-translation="however">however</span>, <span class="clickable-word" data-translation="moved">moved</span> by the <span class="clickable-word" data-translation="miracle">miracle</span> that had <span class="clickable-word" data-translation="just">just</span> <span class="clickable-word" data-translation="happened">happened</span> <span class="clickable-word" data-translation="before">before</span> their <span class="clickable-word" data-translation="very">very</span> <span class="clickable-word" data-translation="eyes">eyes</span>.
+
+<h2>Abraham Leaves His Homeland</h2>
+
+<span class="clickable-word" data-translation="still">Still</span> Abraham <span class="clickable-word" data-translation="tried">tried</span> to <span class="clickable-word" data-translation="persuade">persuade</span> his own <span class="clickable-word" data-translation="dear">dear</span> <span class="clickable-word" data-translation="father">father</span>, who was <span class="clickable-word" data-translation="named">named</span> Azar, not to <span class="clickable-word" data-translation="worship">worship</span> <span class="clickable-word" data-translation="powerless">powerless</span>, un-<span class="clickable-word" data-translation="seeing">seeing</span>, un-<span class="clickable-word" data-translation="hearing">hearing</span> <span class="clickable-word" data-translation="statues">statues</span>. Abraham <span class="clickable-word" data-translation="explained">explained</span> that <span class="clickable-word" data-translation="special">special</span> <span class="clickable-word" data-translation="knowledge">knowledge</span> had <span class="clickable-word" data-translation="come">come</span> to him and <span class="clickable-word" data-translation="implored">implored</span> his <span class="clickable-word" data-translation="father">father</span>, 'So <span class="clickable-word" data-translation="follow">follow</span> me and I will <span class="clickable-word" data-translation="lead">lead</span> you on the <span class="clickable-word" data-translation="right">right</span> <span class="clickable-word" data-translation="path">path</span>. O my <span class="clickable-word" data-translation="father">father</span>! Don't <span class="clickable-word" data-translation="serve">serve</span> the <span class="clickable-word" data-translation="devil">Devil</span>.' But Azar <span class="clickable-word" data-translation="would">would</span> not <span class="clickable-word" data-translation="listen">listen</span>. He <span class="clickable-word" data-translation="threatened">threatened</span> his <span class="clickable-word" data-translation="son">son</span> with <span class="clickable-word" data-translation="stoning">stoning</span> if he <span class="clickable-word" data-translation="continued">continued</span> to <span class="clickable-word" data-translation="reject">reject</span> the <span class="clickable-word" data-translation="gods">gods</span> of Ur. He <span class="clickable-word" data-translation="ordered">ordered</span> Abraham to <span class="clickable-word" data-translation="leave">leave</span> the <span class="clickable-word" data-translation="city">city</span> with these <span class="clickable-word" data-translation="words">words</span>: '<span class="clickable-word" data-translation="depart">Depart</span> from me a <span class="clickable-word" data-translation="long">long</span> <span class="clickable-word" data-translation="while">while</span>.' Abraham <span class="clickable-word" data-translation="said">said</span>, '<span class="clickable-word" data-translation="peace">Peace</span> be upon you! I <span class="clickable-word" data-translation="shall">shall</span> <span class="clickable-word" data-translation="ask">ask</span> my <span class="clickable-word" data-translation="lord's">Lord's</span> <span class="clickable-word" data-translation="forgiveness">forgiveness</span> for you. <span class="clickable-word" data-translation="surely">Surely</span> He <span class="clickable-word" data-translation="was">was</span> <span class="clickable-word" data-translation="ever">ever</span> <span class="clickable-word" data-translation="gracious">gracious</span> to me.'
+
+<br><br><span class="clickable-word" data-translation="imagine">Imagine</span> <span class="clickable-word" data-translation="how">how</span> <span class="clickable-word" data-translation="terrible">terrible</span> it <span class="clickable-word" data-translation="must">must</span> have <span class="clickable-word" data-translation="been">been</span> for him to <span class="clickable-word" data-translation="leave">leave</span> his <span class="clickable-word" data-translation="home">home</span>, his <span class="clickable-word" data-translation="family">family</span> and all that he <span class="clickable-word" data-translation="knew">knew</span>, and <span class="clickable-word" data-translation="set">set</span> out <span class="clickable-word" data-translation="across">across</span> the <span class="clickable-word" data-translation="wilderness">wilderness</span> <span class="clickable-word" data-translation="into">into</span> the <span class="clickable-word" data-translation="unknown">unknown</span>. But at the <span class="clickable-word" data-translation="same">same</span> <span class="clickable-word" data-translation="time">time</span>, <span class="clickable-word" data-translation="how">how</span> could he have <span class="clickable-word" data-translation="remained">remained</span> <span class="clickable-word" data-translation="among">among</span> <span class="clickable-word" data-translation="people">people</span> who did not <span class="clickable-word" data-translation="believe">believe</span> in Allah and who <span class="clickable-word" data-translation="worshipped">worshipped</span> <span class="clickable-word" data-translation="statues">statues</span>? Abraham <span class="clickable-word" data-translation="always">always</span> had a <span class="clickable-word" data-translation="sense">sense</span> that Allah <span class="clickable-word" data-translation="cared">cared</span> for him and he <span class="clickable-word" data-translation="felt">felt</span> Allah <span class="clickable-word" data-translation="near">near</span> him as he <span class="clickable-word" data-translation="traveled">traveled</span>. At <span class="clickable-word" data-translation="last">last</span>, <span class="clickable-word" data-translation="after">after</span> a <span class="clickable-word" data-translation="long">long</span> <span class="clickable-word" data-translation="hard">hard</span> <span class="clickable-word" data-translation="journey">journey</span>, he <span class="clickable-word" data-translation="arrived">arrived</span> at a <span class="clickable-word" data-translation="place">place</span> <span class="clickable-word" data-translation="by">by</span> the Mediterranean <span class="clickable-word" data-translation="sea">Sea</span>, not <span class="clickable-word" data-translation="far">far</span> from Egypt. <span class="clickable-word" data-translation="there">There</span> he <span class="clickable-word" data-translation="married">married</span> a <span class="clickable-word" data-translation="noble">noble</span> <span class="clickable-word" data-translation="woman">woman</span> by the <span class="clickable-word" data-translation="name">name</span> of Sarah and <span class="clickable-word" data-translation="settled">settled</span> in the <span class="clickable-word" data-translation="land">land</span> of Palestine.
+
+<h2>The Promise of Two Sons</h2>
+
+<span class="clickable-word" data-translation="many">Many</span> <span class="clickable-word" data-translation="years">years</span> <span class="clickable-word" data-translation="passed">passed</span> but Abraham and his <span class="clickable-word" data-translation="wife">wife</span> <span class="clickable-word" data-translation="were">were</span> not <span class="clickable-word" data-translation="blessed">blessed</span> with <span class="clickable-word" data-translation="any">any</span> <span class="clickable-word" data-translation="children">children</span>. In the <span class="clickable-word" data-translation="hope">hope</span> that <span class="clickable-word" data-translation="there">there</span> <span class="clickable-word" data-translation="would">would</span> be a <span class="clickable-word" data-translation="child">child</span>, and in <span class="clickable-word" data-translation="keeping">keeping</span> <span class="clickable-word" data-translation="with">with</span> <span class="clickable-word" data-translation="tradition">tradition</span>, Sarah <span class="clickable-word" data-translation="suggested">suggested</span> that Abraham <span class="clickable-word" data-translation="should">should</span> <span class="clickable-word" data-translation="marry">marry</span> Hagar, her Egyptian <span class="clickable-word" data-translation="handmaid">handmaid</span>. <span class="clickable-word" data-translation="soon">Soon</span> <span class="clickable-word" data-translation="after">after</span> this <span class="clickable-word" data-translation="took">took</span> <span class="clickable-word" data-translation="place">place</span>, Hagar had a <span class="clickable-word" data-translation="little">little</span> <span class="clickable-word" data-translation="boy">boy</span> <span class="clickable-word" data-translation="named">named</span> Ishmael. Some <span class="clickable-word" data-translation="time">time</span> <span class="clickable-word" data-translation="later">later</span> Allah <span class="clickable-word" data-translation="promised">promised</span> Abraham <span class="clickable-word" data-translation="another">another</span> <span class="clickable-word" data-translation="son">son</span>, but this <span class="clickable-word" data-translation="time">time</span> the <span class="clickable-word" data-translation="mother">mother</span> of the <span class="clickable-word" data-translation="child">child</span> <span class="clickable-word" data-translation="would">would</span> be his <span class="clickable-word" data-translation="first">first</span> <span class="clickable-word" data-translation="wife">wife</span>, Sarah. This <span class="clickable-word" data-translation="second">second</span> <span class="clickable-word" data-translation="son">son</span> <span class="clickable-word" data-translation="would">would</span> be <span class="clickable-word" data-translation="called">called</span> Isaac.
+
+<br><br>Allah <span class="clickable-word" data-translation="also">also</span> <span class="clickable-word" data-translation="told">told</span> Abraham that from his <span class="clickable-word" data-translation="two">two</span> <span class="clickable-word" data-translation="sons">sons</span>-Ishmael and Isaac-<span class="clickable-word" data-translation="two">two</span> <span class="clickable-word" data-translation="nations">nations</span> and <span class="clickable-word" data-translation="three">three</span> <span class="clickable-word" data-translation="religions">religions</span> <span class="clickable-word" data-translation="would">would</span> be <span class="clickable-word" data-translation="founded">founded</span> and <span class="clickable-word" data-translation="because">because</span> of this he <span class="clickable-word" data-translation="must">must</span> <span class="clickable-word" data-translation="take">take</span> Hagar and Ishmael <span class="clickable-word" data-translation="away">away</span> from Palestine to a <span class="clickable-word" data-translation="new">new</span> <span class="clickable-word" data-translation="land">land</span>. These <span class="clickable-word" data-translation="events">events</span> <span class="clickable-word" data-translation="were">were</span> an <span class="clickable-word" data-translation="important">important</span> <span class="clickable-word" data-translation="part">part</span> of Allah's <span class="clickable-word" data-translation="plan">plan</span>, for the <span class="clickable-word" data-translation="descendants">descendants</span> of Ishmael <span class="clickable-word" data-translation="would">would</span> <span class="clickable-word" data-translation="form">form</span> a <span class="clickable-word" data-translation="nation">nation</span> from <span class="clickable-word" data-translation="which">which</span> <span class="clickable-word" data-translation="would">would</span> <span class="clickable-word" data-translation="come">come</span> a <span class="clickable-word" data-translation="great">great</span> <span class="clickable-word" data-translation="prophet">Prophet</span>, who <span class="clickable-word" data-translation="would">would</span> <span class="clickable-word" data-translation="guide">guide</span> the <span class="clickable-word" data-translation="people">people</span> in the way of Allah. This was to be Muhammad (pbuh), the <span class="clickable-word" data-translation="messenger">Messenger</span> of Allah (pbuh). From the <span class="clickable-word" data-translation="descendants">descendants</span> of Sarah's <span class="clickable-word" data-translation="child">child</span>, Isaac, <span class="clickable-word" data-translation="would">would</span> <span class="clickable-word" data-translation="come">come</span> Moses and Jesus.
+
+<h2>Hagar and Ishmael in the Desert</h2>
+
+So it was that Abraham, Hagar, and Ishmael <span class="clickable-word" data-translation="left">left</span> Palestine. They <span class="clickable-word" data-translation="traveled">traveled</span> for <span class="clickable-word" data-translation="many">many</span> <span class="clickable-word" data-translation="days">days</span> <span class="clickable-word" data-translation="until">until</span> <span class="clickable-word" data-translation="finally">finally</span> they <span class="clickable-word" data-translation="reached">reached</span> the <span class="clickable-word" data-translation="arid">arid</span> <span class="clickable-word" data-translation="valley">valley</span> of Bacca (later to be <span class="clickable-word" data-translation="called">called</span> Mecca), <span class="clickable-word" data-translation="which">which</span> was on one of the <span class="clickable-word" data-translation="great">great</span> <span class="clickable-word" data-translation="caravan">caravan</span> <span class="clickable-word" data-translation="routes">routes</span>. <span class="clickable-word" data-translation="there">There</span> was no <span class="clickable-word" data-translation="water">water</span> in the <span class="clickable-word" data-translation="valley">valley</span> and <span class="clickable-word" data-translation="although">although</span> Hagar and Ishmael <span class="clickable-word" data-translation="only">only</span> had a <span class="clickable-word" data-translation="small">small</span> <span class="clickable-word" data-translation="supply">supply</span> of <span class="clickable-word" data-translation="water">water</span> <span class="clickable-word" data-translation="left">left</span>, Abraham <span class="clickable-word" data-translation="left">left</span> them <span class="clickable-word" data-translation="there">there</span> <span class="clickable-word" data-translation="knowing">knowing</span> Allah <span class="clickable-word" data-translation="would">would</span> <span class="clickable-word" data-translation="take">take</span> <span class="clickable-word" data-translation="care">care</span> of them.
+
+<br><br><span class="clickable-word" data-translation="soon">Soon</span> all the <span class="clickable-word" data-translation="water">water</span> was <span class="clickable-word" data-translation="gone">gone</span>. The <span class="clickable-word" data-translation="child">child</span> <span class="clickable-word" data-translation="began">began</span> to <span class="clickable-word" data-translation="grow">grow</span> <span class="clickable-word" data-translation="weak">weak</span> from <span class="clickable-word" data-translation="thirst">thirst</span>. <span class="clickable-word" data-translation="there">There</span> <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="two">two</span> <span class="clickable-word" data-translation="hills">hills</span> <span class="clickable-word" data-translation="nearby">nearby</span>, <span class="clickable-word" data-translation="one">one</span> <span class="clickable-word" data-translation="called">called</span> Safa and the <span class="clickable-word" data-translation="other">other</span> Marwah. Hagar <span class="clickable-word" data-translation="went">went</span> <span class="clickable-word" data-translation="up">up</span> <span class="clickable-word" data-translation="one">one</span> <span class="clickable-word" data-translation="hill">hill</span> and <span class="clickable-word" data-translation="looked">looked</span> <span class="clickable-word" data-translation="into">into</span> the <span class="clickable-word" data-translation="distance">distance</span> to <span class="clickable-word" data-translation="see">see</span> if she could <span class="clickable-word" data-translation="find">find</span> <span class="clickable-word" data-translation="any">any</span> <span class="clickable-word" data-translation="water">water</span>, but <span class="clickable-word" data-translation="found">found</span> <span class="clickable-word" data-translation="none">none</span>. So she <span class="clickable-word" data-translation="went">went</span> to the <span class="clickable-word" data-translation="other">other</span> <span class="clickable-word" data-translation="hill">hill</span> and did the <span class="clickable-word" data-translation="same">same</span>. She did this <span class="clickable-word" data-translation="seven">seven</span> <span class="clickable-word" data-translation="times">times</span>. Then <span class="clickable-word" data-translation="sadly">sadly</span> she <span class="clickable-word" data-translation="returned">returned</span> to her <span class="clickable-word" data-translation="son">son</span>, and to her <span class="clickable-word" data-translation="great">great</span> <span class="clickable-word" data-translation="surprise">surprise</span> and <span class="clickable-word" data-translation="joy">joy</span> she <span class="clickable-word" data-translation="found">found</span> a <span class="clickable-word" data-translation="spring">spring</span> of <span class="clickable-word" data-translation="water">water</span> <span class="clickable-word" data-translation="bubbling">bubbling</span> out of the <span class="clickable-word" data-translation="earth">earth</span> <span class="clickable-word" data-translation="near">near</span> him. This <span class="clickable-word" data-translation="spring">spring</span>, <span class="clickable-word" data-translation="near">near</span> <span class="clickable-word" data-translation="which">which</span> the <span class="clickable-word" data-translation="mother">mother</span> and <span class="clickable-word" data-translation="child">child</span> <span class="clickable-word" data-translation="settled">settled</span>, was <span class="clickable-word" data-translation="later">later</span> <span class="clickable-word" data-translation="called">called</span> Zamzam.
+
+<br><br>The <span class="clickable-word" data-translation="area">area</span> <span class="clickable-word" data-translation="around">around</span> it <span class="clickable-word" data-translation="became">became</span> a <span class="clickable-word" data-translation="place">place</span> of <span class="clickable-word" data-translation="rest">rest</span> for the <span class="clickable-word" data-translation="caravans">caravans</span> <span class="clickable-word" data-translation="travelling">travelling</span> <span class="clickable-word" data-translation="across">across</span> the <span class="clickable-word" data-translation="desert">desert</span> and in <span class="clickable-word" data-translation="time">time</span> <span class="clickable-word" data-translation="grew">grew</span> <span class="clickable-word" data-translation="into">into</span> the <span class="clickable-word" data-translation="famous">famous</span> <span class="clickable-word" data-translation="trading">trading</span> <span class="clickable-word" data-translation="city">city</span> of Mecca.
+
+<h2>Building the Ka'bah</h2>
+
+From <span class="clickable-word" data-translation="time">time</span> to <span class="clickable-word" data-translation="time">time</span> Abraham <span class="clickable-word" data-translation="traveled">traveled</span> from Palestine to <span class="clickable-word" data-translation="visit">visit</span> his <span class="clickable-word" data-translation="family">family</span> and he <span class="clickable-word" data-translation="saw">saw</span> Ishmael <span class="clickable-word" data-translation="grow">grow</span> <span class="clickable-word" data-translation="into">into</span> a <span class="clickable-word" data-translation="strong">strong</span> <span class="clickable-word" data-translation="young">young</span> <span class="clickable-word" data-translation="man">man</span>. It was <span class="clickable-word" data-translation="during">during</span> <span class="clickable-word" data-translation="one">one</span> of these <span class="clickable-word" data-translation="visits">visits</span> that Allah <span class="clickable-word" data-translation="commanded">commanded</span> them to <span class="clickable-word" data-translation="rebuild">rebuild</span> the Ka'bah-the <span class="clickable-word" data-translation="very">very</span> <span class="clickable-word" data-translation="first">first</span> <span class="clickable-word" data-translation="place">place</span> <span class="clickable-word" data-translation="where">where</span> <span class="clickable-word" data-translation="people">people</span> had <span class="clickable-word" data-translation="worshipped">worshipped</span> Allah. They <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="told">told</span> <span class="clickable-word" data-translation="exactly">exactly</span> <span class="clickable-word" data-translation="where">where</span> and <span class="clickable-word" data-translation="how">how</span> to <span class="clickable-word" data-translation="build">build</span> it. It was to be <span class="clickable-word" data-translation="erected">erected</span> by the well of Zamzam and <span class="clickable-word" data-translation="built">built</span> in the <span class="clickable-word" data-translation="shape">shape</span> of a <span class="clickable-word" data-translation="cube">cube</span>. In its <span class="clickable-word" data-translation="eastern">eastern</span> <span class="clickable-word" data-translation="corner">corner</span> was to be <span class="clickable-word" data-translation="placed">placed</span> a <span class="clickable-word" data-translation="black">black</span> <span class="clickable-word" data-translation="stone">stone</span> that had <span class="clickable-word" data-translation="fallen">fallen</span> to <span class="clickable-word" data-translation="earth">earth</span> from <span class="clickable-word" data-translation="heaven">heaven</span>. An <span class="clickable-word" data-translation="angel">angel</span> <span class="clickable-word" data-translation="brought">brought</span> the <span class="clickable-word" data-translation="stone">stone</span> to them from the <span class="clickable-word" data-translation="nearby">nearby</span> <span class="clickable-word" data-translation="hill">hill</span> of Abu Qubays.
+
+<br><br>Abraham and Ishmael <span class="clickable-word" data-translation="worked">worked</span> <span class="clickable-word" data-translation="hard">hard</span> to <span class="clickable-word" data-translation="rebuild">rebuild</span> the Ka'bah and as they did so they <span class="clickable-word" data-translation="prayed">prayed</span> to Allah to <span class="clickable-word" data-translation="send">send</span> a <span class="clickable-word" data-translation="prophet">Prophet</span> from <span class="clickable-word" data-translation="among">among</span> their <span class="clickable-word" data-translation="descendants">descendants</span>. And when Abraham and Ishmael <span class="clickable-word" data-translation="were">were</span> <span class="clickable-word" data-translation="raising">raising</span> the <span class="clickable-word" data-translation="foundations">foundations</span> of the <span class="clickable-word" data-translation="house">House</span>, (Abraham <span class="clickable-word" data-translation="prayed">prayed</span>): 'Our <span class="clickable-word" data-translation="lord">Lord</span>! <span class="clickable-word" data-translation="receive">Receive</span> this from us; <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="only">only</span> <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="art">art</span> the All-<span class="clickable-word" data-translation="hearing">hearing</span>, the All-<span class="clickable-word" data-translation="knowing">knowing</span>; Our <span class="clickable-word" data-translation="lord">Lord</span>! And <span class="clickable-word" data-translation="make">make</span> us <span class="clickable-word" data-translation="submissive">submissive</span> <span class="clickable-word" data-translation="unto">unto</span> <span class="clickable-word" data-translation="thee">Thee</span> and of our <span class="clickable-word" data-translation="seed">seed</span> a <span class="clickable-word" data-translation="nation">nation</span> <span class="clickable-word" data-translation="submissive">submissive</span> <span class="clickable-word" data-translation="unto">unto</span> <span class="clickable-word" data-translation="thee">Thee</span>, and <span class="clickable-word" data-translation="show">show</span> us our <span class="clickable-word" data-translation="ways">ways</span> of <span class="clickable-word" data-translation="worship">worship</span>, and <span class="clickable-word" data-translation="turn">turn</span> <span class="clickable-word" data-translation="toward">toward</span> us. <span class="clickable-word" data-translation="lo">Lo!</span> <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="only">only</span> <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="art">art</span> the <span class="clickable-word" data-translation="relenting">Relenting</span>, the <span class="clickable-word" data-translation="merciful">Merciful</span>. Our <span class="clickable-word" data-translation="lord">Lord</span>! And <span class="clickable-word" data-translation="raise">raise</span> up in their <span class="clickable-word" data-translation="midst">midst</span> a <span class="clickable-word" data-translation="messenger">messenger</span> from <span class="clickable-word" data-translation="among">among</span> them who <span class="clickable-word" data-translation="shall">shall</span> <span class="clickable-word" data-translation="recite">recite</span> <span class="clickable-word" data-translation="unto">unto</span> them Thy <span class="clickable-word" data-translation="revelations">revelations</span>, and <span class="clickable-word" data-translation="shall">shall</span> <span class="clickable-word" data-translation="instruct">instruct</span> them in the <span class="clickable-word" data-translation="scripture">Scripture</span> and in <span class="clickable-word" data-translation="wisdom">wisdom</span> and <span class="clickable-word" data-translation="shall">shall</span> <span class="clickable-word" data-translation="make">make</span> them <span class="clickable-word" data-translation="grow">grow</span>. <span class="clickable-word" data-translation="lo">Lo!</span> <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="only">only</span> <span class="clickable-word" data-translation="thou">Thou</span>, <span class="clickable-word" data-translation="art">art</span> the <span class="clickable-word" data-translation="mighty">Mighty</span>, <span class="clickable-word" data-translation="wise">Wise</span>.'
+
+<br><br>When the Ka'bah was <span class="clickable-word" data-translation="completed">completed</span>, Allah <span class="clickable-word" data-translation="commanded">commanded</span> Abraham to <span class="clickable-word" data-translation="call">call</span> <span class="clickable-word" data-translation="mankind">mankind</span> to <span class="clickable-word" data-translation="pilgrimage">pilgrimage</span> to His <span class="clickable-word" data-translation="holy">Holy</span> <span class="clickable-word" data-translation="house">House</span>. Abraham <span class="clickable-word" data-translation="wondered">wondered</span> <span class="clickable-word" data-translation="how">how</span> <span class="clickable-word" data-translation="anyone">anyone</span> could <span class="clickable-word" data-translation="hear">hear</span> his <span class="clickable-word" data-translation="call">call</span>. Allah <span class="clickable-word" data-translation="said">said</span>, 'You <span class="clickable-word" data-translation="call">call</span> and I will <span class="clickable-word" data-translation="bring">bring</span> them.' This was <span class="clickable-word" data-translation="how">how</span> the <span class="clickable-word" data-translation="pilgrimage">pilgrimage</span> to the Ka'bah in Mecca was <span class="clickable-word" data-translation="established">established</span> and when <span class="clickable-word" data-translation="muslims">Muslims</span> make the <span class="clickable-word" data-translation="pilgrimage">pilgrimage</span> <span class="clickable-word" data-translation="today">today</span> they <span class="clickable-word" data-translation="continue">continue</span> to <span class="clickable-word" data-translation="answer">answer</span> the <span class="clickable-word" data-translation="age-old">age-old</span> <span class="clickable-word" data-translation="call">call</span> of Abraham.`;
+
+            return originalText;
+        }
+
+        let clickCount = 0;
+        let totalWords = 0;
+        let currentTooltip = null;
+
+        function initializeText() {
+            const textContent = prepareText();
+            document.getElementById('textContent').innerHTML = textContent;
+            
+            // Tıklanabilir kelimelere event listener ekle
+            const clickableWords = document.querySelectorAll('.clickable-word');
+            totalWords = clickableWords.length;
+            document.getElementById('totalWords').textContent = `Toplam kelime: ${totalWords}`;
+            
+            clickableWords.forEach(word => {
+                word.addEventListener('click', handleWordClick);
+                word.addEventListener('mouseenter', showTooltip);
+                word.addEventListener('mouseleave', hideTooltip);
+            });
+        }
+
+        function handleWordClick(event) {
+            const word = event.target;
+            
+            // Daha önce tıklanmış mı kontrol et
+            if (!word.classList.contains('word-clicked')) {
+                // Kelimeyi işaretli olarak göster
+                word.classList.add('word-clicked');
+                
+                // Tıklama sayısını artır
+                clickCount++;
+                updateStats();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('clickStats').textContent = `Tıklanan kelime: ${clickCount}`;
+            const percentage = Math.round((clickCount / totalWords) * 100);
+            document.getElementById('percentage').textContent = `İlerleme: ${percentage}%`;
+            
+            // Progress bar güncelle
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        function showTooltip(event) {
+            const word = event.target;
+            const translationKey = word.dataset.translation;
+            const translation = translations[translationKey] || translationKey;
+            
+            // Mevcut tooltip'i kaldır
+            if (currentTooltip) {
+                currentTooltip.remove();
+            }
+            
+            // Yeni tooltip oluştur
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = translation;
+            
+            word.appendChild(tooltip);
+            currentTooltip = tooltip;
+            
+            // Tooltip'i göster
+            setTimeout(() => {
+                tooltip.classList.add('show');
+            }, 10);
+        }
+
+        function hideTooltip(event) {
+            if (currentTooltip) {
+                currentTooltip.classList.remove('show');
+                setTimeout(() => {
+                    if (currentTooltip) {
+                        currentTooltip.remove();
+                        currentTooltip = null;
+                    }
+                }, 300);
+            }
+        }
+
+        // Sayfa yüklendiğinde başlat
+        document.addEventListener('DOMContentLoaded', initializeText);
+    </script>
+</body>
+</html> 
